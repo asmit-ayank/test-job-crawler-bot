@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+.env
+.DS_Store
+
+# Logs and Playwright
+*.log
+venv/
+node_modules/
