@@ -2,23 +2,14 @@ import os
 import time
 import random
 import logging
+import requests # <-- Switch back to requests
 from bs4 import BeautifulSoup 
-from playwright.sync_api import sync_playwright
-
 # --- 1. Global Configuration and Anti-Blocking Lists ---
 
 # Indeed search URL components (fetched from Render Environment Variables)
 JOB_TITLE = os.getenv("JOB_TITLE", "Software Engineer")
 JOB_LOCATION = os.getenv("JOB_LOCATION", "Remote")
 INDEED_BASE_URL = "https://www.indeed.com/jobs"
-
-# List of realistic User-Agents to rotate (add more for better evasion)
-USER_AGENTS = [ 
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0',
-]
 
 # --- 2. Helper Functions ---
 
