@@ -5,11 +5,17 @@ import logging
 import requests # <-- Switch back to requests
 from bs4 import BeautifulSoup 
 # --- 1. Global Configuration and Anti-Blocking Lists ---
+# --- 1. Global Configuration ---
+# Fetch your API Key
+SCRAPERAPI_KEY = os.getenv("SCRAPERAPI_KEY")
 
 # Indeed search URL components (fetched from Render Environment Variables)
 JOB_TITLE = os.getenv("JOB_TITLE", "Software Engineer")
 JOB_LOCATION = os.getenv("JOB_LOCATION", "Remote")
-INDEED_BASE_URL = "https://www.indeed.com/jobs"
+# ... other variables ...
+# Indeed search URL components (fetched from Render Environment Variables)
+JOB_TITLE = os.getenv("JOB_TITLE", "Software Engineer")
+JOB_LOCATION = os.getenv("JOB_LOCATION", "Remote")
 
 # --- 2. Helper Functions ---
 
@@ -21,69 +27,61 @@ def implement_delay():
 
 # --- 3. Core Scraping Function (Playwright) ---
 
-def scrape_indeed(url):
-    """Launches Playwright, navigates to Indeed, and returns the rendered HTML."""
+# --- 3. Core Scraping Function (ScraperAPI) ---
+
+def scrape_indeed(indeed_url):
+    """
+    Sends the Indeed URL to ScraperAPI for automated scraping.
+    Uses 'render=True' to ensure JavaScript is executed.
+    """
+    if not SCRAPERAPI_KEY:
+        logging.error("SCRAPERAPI_KEY environment variable is missing.")
+        return None
+
+    api_url = 'http://api.scraperapi.com/'
+    
+    # Parameters for ScraperAPI
+    payload = {
+        'api_key': SCRAPERAPI_KEY,
+        'url': indeed_url,
+        # IMPORTANT: Use render=True to execute JavaScript (needed for Indeed)
+        'render': 'true', 
+        'country_code': 'us' # Optional: Use this if targeting US jobs
+    }
+    
     try:
-        with sync_playwright() as p:
-            # Launch the browser with a random User-Agent
-            user_agent = random.choice(USER_AGENTS)
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(user_agent=user_agent)
-            page = context.new_page()
-
-            logging.info(f"Navigating with User-Agent: {user_agent}")
-            page.goto(url, timeout=60000)
-
-            # Wait for the job listings element to appear (JS content loaded)
-            JOB_CARD_SELECTOR = 'div.jobsearch-SerpJobCard' # Check this selector if Indeed changes
-            page.wait_for_selector(JOB_CARD_SELECTOR, timeout=15000) 
+        logging.info(f"Sending request to ScraperAPI for: {indeed_url}")
+        response = requests.get(api_url, params=payload, timeout=60) # Increased timeout
+        
+        if response.status_code == 200:
+            return response.text
+        else:
+            logging.error(f"ScraperAPI failed with status code: {response.status_code}")
+            return None
             
-            html_content = page.content()
-            browser.close()
-            return html_content
     except Exception as e:
-        logging.error(f"Playwright/Scraping Error: {e}")
+        logging.error(f"ScraperAPI Request Error: {e}")
         return None
 
 # --- 4. Main Execution Logic ---
 
+# --- 4. Main Execution Logic ---
 def main():
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    logging.info("Job Crawler Bot Started.")
+    # ... setup and logging ...
     
-    # 1. Build the initial search URL
-    search_query = f"q={JOB_TITLE}&l={JOB_LOCATION}"
-    
-    # Simple loop for the first 3 pages (adjust range as needed)
+    # Simple loop for the first 3 pages
     for page_number in range(3): 
-        start_index = page_number * 10 # Indeed pagination uses 'start=0', 'start=10', etc.
-        current_url = f"{INDEED_BASE_URL}?{search_query}&start={start_index}"
+        # ... setup URL ...
         
-        logging.info(f"Scraping Page {page_number + 1} at: {current_url}")
-        
-        raw_html = scrape_indeed(current_url)
+        # 1. Call the new ScraperAPI Function
+        raw_html = scrape_indeed(current_url) # current_url is the Indeed URL
         
         if raw_html:
-            # 2. Parse the HTML content
+            # 2. Parse the HTML (now the HTML is guaranteed to be rendered)
             soup = BeautifulSoup(raw_html, 'html.parser')
-            
-            # --- REPLACE THIS WITH YOUR ACTUAL PARSING LOGIC ---
-            job_cards = soup.find_all('div', class_='jobsearch-SerpJobCard') 
-            logging.info(f"Found {len(job_cards)} job cards on Page {page_number + 1}.")
-            # --- END PARSING LOGIC ---
-            
-            # 3. Process the data (save to database or send email)
-            # You would call your database/email functions here
-            
-        else:
-            logging.error(f"Failed to retrieve content for Page {page_number + 1}. Likely blocked.")
-            break # Stop if we are blocked
-
-        # 4. Anti-blocking delay before next page
-        if page_number < 2: # Don't delay after the last page
+            # ... continue parsing logic ...
+        
+        # 3. Keep the delay for courtesy (though less critical with an API)
+        if page_number < 2: 
             implement_delay() 
-
-    logging.info("Job Crawler Bot Finished its run.")
-
-if __name__ == "__main__":
-    main()
+    # ...
