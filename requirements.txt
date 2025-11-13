@@ -1,11 +1,4 @@
-# For making HTTP requests to ScraperAPI
 requests
-
-# For parsing the HTML content returned by ScraperAPI
 beautifulsoup4
-
-# For connecting to your Render Postgres Database
 psycopg2-binary 
-
-# For handling environment variables (optional, but good practice)
 python-dotenv
